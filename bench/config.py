@@ -12,6 +12,7 @@ from bench.latency import LatencyModel
 class Settings:
     backend: str = "aws-local"  # "aws-local" uses OpenSearch and LocalStack, "memory" uses neither
     design: str = "outline"
+    prepare: tuple[str, ...] = ("outline",)
     n_docs: int = 40
     opensearch_url: str = "http://opensearch:9200"
     aws_endpoint_url: str = "http://localstack:4566"
@@ -32,9 +33,12 @@ class Settings:
             sigma=float(env("LATENCY_SIGMA", "0.25")),
             scale=float(env("LATENCY_SCALE", "1.0")),
         )
+        design = env("DESIGN", "outline")
+        prepare = tuple(d.strip() for d in env("PREPARE", design).split(",") if d.strip())
         return cls(
             backend=env("BACKEND", "aws-local"),
-            design=env("DESIGN", "outline"),
+            design=design,
+            prepare=prepare,
             n_docs=int(env("N_DOCS", "40")),
             opensearch_url=env("OPENSEARCH_URL", "http://opensearch:9200"),
             aws_endpoint_url=env("AWS_ENDPOINT_URL", "http://localstack:4566"),
