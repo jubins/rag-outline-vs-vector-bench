@@ -1,10 +1,12 @@
-# Start one design at a time:
-#   make vector     (OpenSearch, vector search with the retry loop)
-#   make outline    (LocalStack, outline-based retrieval)
+# Start both designs and the monitoring stack with `make up`.
+# Then send load to one design at a time:
+#   make load-vector     (vector search with the retry loop, backed by OpenSearch)
+#   make load-outline    (outline-based retrieval, backed by LocalStack)
 name: rag-latency-bench
 
 x-app-env: &app-env
   DESIGN: ${DESIGN:-outline}
+  PREPARE: ${PREPARE:-outline}
   BACKEND: aws-local
   OPENSEARCH_URL: http://opensearch:9200
   AWS_ENDPOINT_URL: http://localstack:4566
@@ -123,7 +125,7 @@ services:
 
   k6:
     image: grafana/k6:0.55.0
-    profiles: ["vector", "outline"]
+    profiles: ["load"]
     command: ["run", "/scripts/script.js"]
     environment:
       BASE_URL: http://orchestrator:8000
