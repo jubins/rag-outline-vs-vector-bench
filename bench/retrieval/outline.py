@@ -8,7 +8,6 @@ import time
 from typing import Protocol
 
 from bench.corpus import Section
-from bench.latency import LatencyModel
 from bench.llm import LLMClient
 from bench.models import OutlineNode, Passage
 from bench.telemetry import Telemetry
@@ -144,21 +143,18 @@ class OutlineRetriever:
         self,
         store: OutlineStore,
         llm: LLMClient,
-        latency: LatencyModel,
         telemetry: Telemetry,
         cache_ttl_seconds: float = 60.0,
     ) -> None:
         self._store = store
         self._cache = OutlineCache(store, cache_ttl_seconds)
         self._llm = llm
-        self._latency = latency
         self._telemetry = telemetry
 
     async def retrieve(self, question: str, doc_id: str) -> list[Passage]:
         with self._telemetry.step(self.design, "outline_lookup"):
             outline = await self._cache.get_outline(doc_id)
         with self._telemetry.step(self.design, "select"):
-            await self._latency.pause("select")
             node_ids = await self._llm.select_nodes(question, outline)
         with self._telemetry.step(self.design, "fetch"):
             return await self._store.get_sections(doc_id, node_ids)

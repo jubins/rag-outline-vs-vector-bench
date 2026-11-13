@@ -44,6 +44,8 @@ class LocalLLM:
         self._latency = latency
 
     async def select_nodes(self, question: str, outline: list[OutlineNode]) -> list[str]:
+        if self._latency:
+            await self._latency.pause("select")
         return self._model.select_nodes(question, outline)
 
     async def generate(self, question: str, passages: list[Passage]) -> Generation:
