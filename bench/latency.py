@@ -29,13 +29,14 @@ class LatencyModel:
     def __post_init__(self) -> None:
         self._rng = random.Random(self.seed)
 
-    def sample_ms(self, step: str) -> float:
+    def sample_ms(self, step: str, factor: float = 1.0) -> float:
         median = self.medians_ms.get(step, 0.0)
         if median <= 0:
             return 0.0
-        return median * math.exp(self._rng.gauss(0.0, self.sigma))
+        return median * factor * math.exp(self._rng.gauss(0.0, self.sigma))
 
-    async def pause(self, step: str) -> None:
-        delay = self.sample_ms(step) * self.scale / 1000.0
+    async def pause(self, step: str, factor: float = 1.0) -> None:
+        """Sleep for a simulated step time. factor scales the median, for example with k."""
+        delay = self.sample_ms(step, factor) * self.scale / 1000.0
         if delay > 0:
             await asyncio.sleep(delay)

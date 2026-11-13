@@ -127,5 +127,6 @@ class VectorRetriever:
         with self._telemetry.step(self.design, "search"):
             hits = await self._store.search(vector, k)
         with self._telemetry.step(self.design, "rerank"):
-            await self._latency.pause("rerank")
+            # Re-ranking more candidates takes longer, so wider retries cost more.
+            await self._latency.pause("rerank", factor=len(hits) / 30)
             return rerank(question, hits)
