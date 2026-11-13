@@ -122,7 +122,7 @@ def build_corpus(n_docs: int = 40, seed: int = 7) -> dict[str, list[Section]]:
 
 
 def build_questions(
-    corpus: dict[str, list[Section]], n: int = 500, hard_ratio: float = 0.06, seed: int = 11
+    corpus: dict[str, list[Section]], n: int = 500, hard_ratio: float = 0.10, seed: int = 11
 ) -> list[Question]:
     """Build n questions. hard_ratio is the share whose answer is behind a pointer section."""
     rng = random.Random(seed)
