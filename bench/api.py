@@ -29,7 +29,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        await service.prepare(settings.design)
+        for design in settings.prepare:
+            await service.prepare(design)
         yield
 
     app = FastAPI(title="RAG latency bench", lifespan=lifespan)

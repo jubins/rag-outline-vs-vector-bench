@@ -52,3 +52,11 @@ def test_metrics_expose_latency_and_rounds(client):
     text = client.get("/metrics").text
     assert "rag_request_seconds_bucket" in text
     assert "rag_retrieval_rounds_bucket" in text
+
+
+def test_settings_prepare_defaults_to_the_design(monkeypatch):
+    monkeypatch.setenv("DESIGN", "vector")
+    monkeypatch.delenv("PREPARE", raising=False)
+    assert Settings.from_env().prepare == ("vector",)
+    monkeypatch.setenv("PREPARE", "vector, outline")
+    assert Settings.from_env().prepare == ("vector", "outline")
