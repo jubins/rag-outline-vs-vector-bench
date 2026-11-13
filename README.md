@@ -10,11 +10,7 @@ I ran into this in my own work. Most requests were fast, but the slowest 1% took
 
 **Design A: vector search.** The question is embedded, a vector database (OpenSearch) finds similar passages, a re-ranker sorts them, and a model writes the answer. A support check then asks whether the passages really answer the question. If not, the search widens (`k = 20 + rounds * 10`) and everything runs again. That retry loop is where the slow tail comes from.
 
-![Vector design](docs/images/vector-design.png)
-
 **Design B: outline.** Each document is turned into a tree of sections with titles and short summaries. The tree files sit in S3, the section index sits in DynamoDB (both run in LocalStack here), and a small cache keeps hot outlines in memory. At question time the model reads the outline, picks the sections, and the system fetches them. There is no embedding, no vector search and no retry loop.
-
-![Outline design](docs/images/outline-design.png)
 
 ## Run it
 
@@ -46,17 +42,13 @@ The orchestrator exports latency histograms and a retrieval-rounds histogram. Gr
 
 Every pipeline step is also a trace span, so a slow request in Grafana Tempo shows its retries as extra bars.
 
-![Grafana Tempo trace of a slow request](docs/images/grafana-p99-trace.png)
-
 The stack is one Docker Compose project on one network. The two designs have their own profiles, so only the store you need is started.
-
-![Docker Compose layout](docs/images/docker-compose-hub.png)
 
 And this is roughly how the containers look in Docker Desktop once everything is up.
 
 ![Docker Desktop](docs/images/docker-desktop.png)
 
-The four images above are illustrative mock-ups made for my article. Your own dashboard and containers will look similar, but the numbers will be yours.
+The two images above are illustrative mock-ups made for my article. Your own dashboard and containers will look similar, but the numbers will be yours.
 
 ## How the synthetic data works
 
