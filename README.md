@@ -37,19 +37,15 @@ Useful settings (copy `.env.example` to `.env`):
 
 ## What you should see
 
-The orchestrator exports latency histograms and a retrieval-rounds histogram. Grafana turns them into the percentile view below. The outline design should start slower at the median and finish faster in the tail.
-
-![Grafana latency dashboard](docs/images/grafana-latency-dashboard.png)
+The orchestrator exports latency histograms and a retrieval-rounds histogram. The Grafana dashboard **RAG latency: vector vs outline** shows them by percentile for each design. The outline design should start slower at the median and finish faster in the tail. The numbers come from the simulated step times, so they show the shape of the trade-off rather than the figures in my article.
 
 Every pipeline step is also a trace span, so a slow request in Grafana Tempo shows its retries as extra bars.
 
 The stack is one Docker Compose project on one network. The two designs have their own profiles, so only the store you need is started.
 
-And this is roughly how the containers look in Docker Desktop once everything is up.
+The image below is an illustrative mock-up of how the containers look in Docker Desktop with the outline profile running after a load run. It is not a screenshot, and your container IDs and resource numbers will differ.
 
 ![Docker Desktop](docs/images/docker-desktop.png)
-
-The two images above are illustrative mock-ups made for my article. Your own dashboard and containers will look similar, but the numbers will be yours.
 
 ## How the synthetic data works
 
