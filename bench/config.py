@@ -18,6 +18,7 @@ class Settings:
     aws_endpoint_url: str = "http://localstack:4566"
     llm_url: str = "http://llm-stub:8080"
     cache_ttl_seconds: float = 60.0
+    outline_scope: str = "collection"  # "collection" or "document"
     latency: LatencyModel = field(default_factory=LatencyModel)
 
     @classmethod
@@ -44,5 +45,6 @@ class Settings:
             aws_endpoint_url=env("AWS_ENDPOINT_URL", "http://localstack:4566"),
             llm_url=env("LLM_URL", "http://llm-stub:8080"),
             cache_ttl_seconds=float(env("CACHE_TTL_SECONDS", "60")),
+            outline_scope=env("OUTLINE_SCOPE", "collection"),
             latency=latency,
         )

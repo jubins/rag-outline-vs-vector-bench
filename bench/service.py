@@ -77,7 +77,14 @@ class Service:
         if await store.count() < len(self.corpus):
             for doc_id, sections in self.corpus.items():
                 await store.put_document(doc_id, sections)
-        return OutlineRetriever(store, self._llm, self.telemetry, s.cache_ttl_seconds)
+        return OutlineRetriever(
+            store,
+            self._llm,
+            self.telemetry,
+            s.cache_ttl_seconds,
+            doc_ids=sorted(self.corpus),
+            scope=s.outline_scope,
+        )
 
     async def prepare(self, design: str) -> None:
         """Make sure the stores for a design exist and hold the corpus."""

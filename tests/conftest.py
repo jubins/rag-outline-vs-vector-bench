@@ -28,5 +28,5 @@ async def pipeline(corpus):
         llm,
         telemetry,
         vector=VectorRetriever(vector_store, latency, telemetry),
-        outline=OutlineRetriever(outline_store, llm, telemetry),
+        outline=OutlineRetriever(outline_store, llm, telemetry, doc_ids=sorted(corpus)),
     )

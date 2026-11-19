@@ -10,7 +10,7 @@ I ran into this in my own work. Most requests were fast, but the slowest 1% took
 
 **Design A: vector search.** The question is embedded, a vector database (OpenSearch) finds similar passages, a re-ranker sorts them, and a model writes the answer. A support check then asks whether the passages really answer the question. If not, the search widens (`k = 20 + rounds * 10`) and everything runs again. That retry loop is where the slow tail comes from.
 
-**Design B: outline.** Each document is turned into a tree of sections with titles and short summaries. The tree files sit in S3, the section index sits in DynamoDB (both run in LocalStack here), and a small cache keeps hot outlines in memory. At question time the model reads the outline, picks the sections, and the system fetches them. There is no embedding, no vector search and no retry loop.
+**Design B: outline.** Each document is turned into a tree of sections with titles and short summaries. The tree files sit in S3, the section index sits in DynamoDB (both run in LocalStack here), and a small cache keeps hot outlines in memory. At question time the model reads the outlines of every document, picks the sections, and the system fetches them. There is no embedding, no vector search and no retry loop.
 
 ## Run it
 
@@ -33,6 +33,7 @@ Useful settings (copy `.env.example` to `.env`):
 | `DURATION` | `5m` | How long each load run lasts |
 | `EMBED_MS`, `RERANK_MS` | `40`, `80` | Median simulated time for those steps |
 | `SELECT_MS`, `GENERATE_MS` | `800`, `600` | Median simulated time for the two model calls |
+| `OUTLINE_SCOPE` | `collection` | `collection` searches every document; `document` reads only the one named in the request |
 
 ## What you should see
 
@@ -57,7 +58,7 @@ The corpus is 40 contract-style documents with eight sections each. Most questio
 ## What this bench does not claim
 
 - It does not reproduce my numbers. The models, the embedding and the re-ranker are simulated.
-- The vector design searches the whole corpus, while the outline design is scoped to one document. That matches a "ask about this document" use case, but it favours the outline.
+- Both designs search the whole corpus, as in my study. Set `OUTLINE_SCOPE=document` to tell the outline design which document a question is about instead. That fits an "ask about this document" use case, but it favours the outline design.
 - It does not test Amazon S3 Vectors or DynamoDB vector search.
 - A time-to-live cache stands in for DAX, because LocalStack does not provide DAX.
 - Vector search is often the better choice. One study of SEC filings found that vector retrieval won 68% of comparisons. Use this bench to measure your own case.
