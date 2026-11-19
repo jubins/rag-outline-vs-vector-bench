@@ -7,7 +7,7 @@ import json
 import time
 from typing import Protocol
 
-from bench.corpus import Section
+from bench.corpus import Section, doc_tag
 from bench.llm import LLMClient
 from bench.models import OutlineNode, Passage
 from bench.telemetry import Telemetry
@@ -137,6 +137,14 @@ class OutlineCache:
 
 
 class OutlineRetriever:
+    """Reads outlines, lets the model pick sections, then fetches those sections.
+
+    scope="collection" (the default) gives the model the outlines of every document, so it has to
+    find the right document as well as the right section. That matches the vector design, which
+    also searches the whole collection. scope="document" gives the model only the outline of the
+    document named in the request, which is easier and favours this design.
+    """
+
     design = "outline"
 
     def __init__(
@@ -145,16 +153,48 @@ class OutlineRetriever:
         llm: LLMClient,
         telemetry: Telemetry,
         cache_ttl_seconds: float = 60.0,
+        doc_ids: list[str] | None = None,
+        scope: str = "collection",
     ) -> None:
+        if scope not in ("collection", "document"):
+            raise ValueError(f"scope must be 'collection' or 'document', not {scope!r}")
+        if scope == "collection" and not doc_ids:
+            raise ValueError("scope='collection' needs the list of doc_ids")
         self._store = store
         self._cache = OutlineCache(store, cache_ttl_seconds)
         self._llm = llm
         self._telemetry = telemetry
+        self._doc_ids = list(doc_ids or [])
+        self._scope = scope
 
-    async def retrieve(self, question: str, doc_id: str) -> list[Passage]:
+    async def _collection_outline(self) -> list[OutlineNode]:
+        outlines = await asyncio.gather(*(self._cache.get_outline(d) for d in self._doc_ids))
+        return [
+            OutlineNode(node.id, f"Agreement {doc_tag(doc_id)}: {node.title}", node.summary)
+            for doc_id, outline in zip(self._doc_ids, outlines, strict=True)
+            for node in outline
+        ]
+
+    async def retrieve(self, question: str, doc_id: str | None = None) -> list[Passage]:
         with self._telemetry.step(self.design, "outline_lookup"):
-            outline = await self._cache.get_outline(doc_id)
+            if self._scope == "collection":
+                outline = await self._collection_outline()
+            else:
+                if doc_id is None:
+                    raise ValueError("scope='document' needs a doc_id")
+                outline = await self._cache.get_outline(doc_id)
         with self._telemetry.step(self.design, "select"):
             node_ids = await self._llm.select_nodes(question, outline)
         with self._telemetry.step(self.design, "fetch"):
-            return await self._store.get_sections(doc_id, node_ids)
+            by_doc: dict[str, list[str]] = {}
+            for node_id in node_ids:
+                by_doc.setdefault(section_doc_id(node_id), []).append(node_id)
+            fetched = await asyncio.gather(
+                *(self._store.get_sections(d, ids) for d, ids in by_doc.items())
+            )
+            return [p for passages in fetched for p in passages]
+
+
+def section_doc_id(section_id: str) -> str:
+    """Section ids look like doc-0007-s03; the document id is everything before -sNN."""
+    return section_id.rsplit("-s", 1)[0]
